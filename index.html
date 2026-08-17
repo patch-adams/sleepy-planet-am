@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sleepy Planet AM · 1690</title>
+<meta name="description" content="A free public radio station of the imaginal. Recordings of actual play, broadcast on an appointed hour.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23090a0d'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23e0a04a' stroke-width='1.6'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23e0a04a'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200;0,6..72,300;1,6..72,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#090a0d; --panel:#101218; --ink:#efe6d4; --dim:#8e846d; --faint:#5c5646;
+    --amber:#e0a04a; --hot:#ffc978; --rust:#b4472f; --line:rgba(224,160,74,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;-webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent}
+  body{overflow-x:hidden}
+  a{color:var(--amber);text-decoration:none;border-bottom:1px solid rgba(224,160,74,.28)}
+  a:hover{border-color:var(--amber)}
+  .mono{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--dim)}
+  .wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 clamp(16px,5vw,56px)}
+
+  /* ── masthead ─────────────────────────────────────────────── */
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+    background:rgba(9,10,13,.92);backdrop-filter:blur(10px)}
+  header .wrap{display:flex;align-items:center;justify-content:space-between;
+    gap:14px;padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:12px}
+  .brand b{font-family:"Space Mono",monospace;font-weight:700;font-size:13px;
+    letter-spacing:.3em;text-transform:uppercase;color:var(--ink)}
+  .onair{display:inline-flex;align-items:center;gap:8px;font-family:"Space Mono",monospace;
+    font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);
+    border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+  .onair i{width:7px;height:7px;border-radius:50%;background:#3a3428;display:inline-block}
+  .onair.live{color:var(--hot);border-color:rgba(255,201,120,.5)}
+  .onair.live i{background:var(--rust);box-shadow:0 0 10px var(--rust);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ── the dial ─────────────────────────────────────────────── */
+  .hero{padding:clamp(40px,8vw,90px) 0 clamp(30px,5vw,50px)}
+  h1{margin:0 0 6px;font-weight:200;font-size:clamp(2.2rem,7vw,4.4rem);line-height:1.02;
+    letter-spacing:-.02em}
+  h1 em{font-style:italic;color:var(--amber)}
+  .tag{font-size:clamp(1rem,2.6vw,1.28rem);color:#cbc0a8;max-width:30em;line-height:1.6;
+    margin:14px 0 0;font-style:italic}
+
+  .tuner{margin:clamp(28px,5vw,48px) 0 0;border:1px solid var(--line);border-radius:6px;
+    background:linear-gradient(180deg,#12141b,#0c0d12);padding:clamp(16px,3vw,26px);
+    box-shadow:0 30px 70px -50px #000 inset,0 20px 60px -40px #000}
+  .scale{position:relative;height:96px;cursor:ew-resize;overflow:hidden;border-radius:3px;
+    background:radial-gradient(120% 140% at 50% 0%,rgba(224,160,74,.08),transparent 60%)}
+  .scale canvas{display:block;width:100%;height:100%}
+  .needle{position:absolute;top:6px;bottom:6px;width:2px;left:50%;background:var(--rust);
+    box-shadow:0 0 12px rgba(180,71,47,.9);pointer-events:none}
+  .readout{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+    flex-wrap:wrap;padding-top:14px}
+  .khz{font-family:"Space Mono",monospace;font-size:clamp(1.6rem,5vw,2.4rem);color:var(--hot);
+    letter-spacing:.06em}
+  .khz small{font-size:.42em;letter-spacing:.24em;color:var(--dim);margin-left:8px}
+  .lock{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--faint);transition:color .3s}
+  .lock.on{color:var(--hot)}
+  .hint{padding-top:8px}
+
+  /* ── sections ─────────────────────────────────────────────── */
+  section{padding:clamp(40px,7vw,80px) 0;border-top:1px solid var(--line)}
+  h2{margin:0 0 6px;font-weight:200;font-size:clamp(1.5rem,4vw,2.3rem);letter-spacing:-.01em}
+  .lede{color:#c2b79f;font-size:clamp(1rem,2.3vw,1.12rem);line-height:1.7;max-width:34em;margin:10px 0 0}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:clamp(18px,3vw,34px);margin-top:clamp(22px,4vw,40px)}
+  .card{border:1px solid var(--line);border-radius:5px;padding:22px;background:rgba(255,255,255,.012)}
+  .card h3{margin:0 0 8px;font-weight:300;font-size:1.2rem;font-style:italic;color:var(--amber)}
+  .card p{margin:0;color:#b8ae97;line-height:1.65;font-size:.98rem}
+  .num{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.24em;color:var(--faint);
+    display:block;margin-bottom:10px}
+
+  /* ── the season ───────────────────────────────────────────── */
+  .season{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;
+    margin-top:clamp(20px,4vw,34px)}
+  .slot{border:1px solid var(--line);border-radius:4px;padding:14px 12px;min-height:96px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    background:rgba(255,255,255,.01);transition:all .25s}
+  .slot .n{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.2em;color:var(--faint)}
+  .slot .t{font-size:.92rem;color:#5f5949;line-height:1.35;font-style:italic}
+  .slot.ready{border-color:rgba(224,160,74,.45);background:rgba(224,160,74,.05)}
+  .slot.ready .n{color:var(--amber)} .slot.ready .t{color:var(--ink)}
+  .slot.ready:hover{background:rgba(224,160,74,.11)}
+
+  /* ── participate ──────────────────────────────────────────── */
+  .steps{counter-reset:s;margin-top:clamp(20px,4vw,36px)}
+  .step{display:flex;gap:clamp(14px,3vw,28px);padding:22px 0;border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step .k{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.24em;
+    color:var(--faint);min-width:5.5em;padding-top:5px}
+  .step .b h3{margin:0 0 6px;font-weight:300;font-size:1.3rem;font-style:italic}
+  .step .b p{margin:0;color:#b8ae97;line-height:1.68;max-width:32em}
+
+  .btn{display:inline-block;font-family:"Space Mono",monospace;font-size:11px;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--bg);background:var(--amber);
+    border:1px solid var(--amber);border-radius:999px;padding:11px 20px;margin-top:14px;cursor:pointer}
+  .btn:hover{background:var(--hot);border-color:var(--hot)}
+  .btn.ghost{background:transparent;color:var(--amber)}
+  .btn.ghost:hover{background:rgba(224,160,74,.1);color:var(--hot)}
+
+  footer{border-top:1px solid var(--line);padding:34px 0 60px}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:baseline}
+  .fine{color:var(--faint);font-size:.86rem;line-height:1.7;max-width:34em;margin-top:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="brand">
+      <b>Sleepy Planet AM</b>
+      <span class="mono">1690 khz</span>
+    </div>
+    <div class="onair" id="onair"><i></i><span id="onairTxt">off air</span></div>
+  </div>
+</header>
+
+<div class="wrap hero">
+  <h1>A public station<br>of the <em>imaginal</em>.</h1>
+  <p class="tag">People who join us, people who write in, people who we imagined.</p>
+
+  <div class="tuner">
+    <div class="scale" id="scale">
+      <canvas id="band"></canvas>
+      <div class="needle"></div>
+    </div>
+    <div class="readout">
+      <div class="khz" id="khz">1671<small>khz</small></div>
+      <div class="lock" id="lock">searching</div>
+    </div>
+    <div class="hint mono">drag the band · find the carrier</div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <h2>What comes over the air</h2>
+    <p class="lede">Not a show about the practice. The recordings <em>are</em> the practice.
+    Each broadcast is one real session: someone goes somewhere that doesn't exist and
+    describes what they find, and the tape runs. Nothing is acted.</p>
+    <div class="cols">
+      <div class="card">
+        <span class="num">i · the signal</span>
+        <h3>The hour opens</h3>
+        <p>Two minutes from the Keeper. Not a host introduction. A transmission that
+        establishes where you are and asks you to sit still.</p>
+      </div>
+      <div class="card">
+        <span class="num">ii · the passage</span>
+        <h3>Somebody goes</h3>
+        <p>Twelve to fifteen minutes cut from a real session. One traveler, one place,
+        their own voice, unperformed. This is the body of the broadcast.</p>
+      </div>
+      <div class="card">
+        <span class="num">iii · the return</span>
+        <h3>What they carried out</h3>
+        <p>Recorded afterward. The traveler names one thing they brought back. Without
+        this a broadcast is only atmosphere.</p>
+      </div>
+    </div>
+    <p class="lede" style="margin-top:28px">Between the parts, the advertisements. They are
+    part of the story and always have been.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Program One — <em style="font-style:italic;color:var(--amber)">Field Recordings from Nowhere</em></h2>
+    <p class="lede">Thirteen broadcasts. Sundays at ten, Mountain time. When the thirteen are
+    done the program is boxed and the next one takes a different form. A station that never
+    ends is a feed. This one ends on purpose.</p>
+    <div class="season" id="season"></div>
+    <p class="fine">One transmitted. Twelve to go. The first broadcast is offered to the next
+    person who plays.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Three ways in</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="k">listen</div>
+        <div class="b">
+          <h3>Be there at the hour</h3>
+          <p>Every broadcast asks one question and then leaves real silence after it, long
+          enough that an answer forms whether or not you say it out loud. That silence is
+          the whole participation. Nothing to press.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="k">write in</div>
+        <div class="b">
+          <h3>Tell us what you saw</h3>
+          <p>One address. A voice memo or a few lines. Some are read on the air, in the
+          sender's own words. This is the third category in the tagline, and it is not
+          decorative.</p>
+          <a class="btn" href="mailto:hello@sleepyplanet.studio?subject=SPAM%20—%20what%20I%20saw">Write in</a>
+        </div>
+      </div>
+      <div class="step">
+        <div class="k">come in</div>
+        <div class="b">
+          <h3>Ask for a passage</h3>
+          <p>Anyone can request a session. Ninety minutes, nothing to prepare, nothing to
+          get right. Some become broadcasts, and only ever with your say-so after you have
+          heard the cut.</p>
+          <a class="btn ghost" href="mailto:hello@sleepyplanet.studio?subject=SPAM%20—%20I'd%20like%20a%20passage">Ask for a passage</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>There is a real signal</h2>
+    <p class="lede">1690 kHz, unlicensed and legal at very low power, transmitting over
+    roughly one block of Salt Lake City. Almost nobody will ever hear it that way. That is
+    not a distribution plan. It is a fact about the work, and the reason this is a station
+    and not a podcast wearing a costume.</p>
+    <p class="lede">Everything also arrives here, and by feed, for anyone outside the block.</p>
+    <p style="margin-top:26px">
+      <a class="btn ghost" href="charter.html">Read the charter</a>
+      <a class="btn ghost" href="broadcast.html">Broadcast 01</a>
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="mono">Sleepy Planet AM · 1690 khz · surrealist realist imagination</div>
+      <p class="fine">Broadcasts from somewhere, sent to nowhere, picked up from anywhere.
+      Nothing on this station is performed. Every voice consented after hearing the cut.</p>
+    </div>
+    <div class="mono">signalform</div>
+  </div>
+</footer>
+
+<script>
+/* ============================================================================
+   the tuner
+
+   A band you drag. Static everywhere except one place. Land on 1690 and the
+   noise resolves into a carrier, the readout locks, and the station admits it
+   is there. The dial is the door; that was always the idea.
+   ========================================================================= */
+var LO=1600, HI=1710, CARRIER=1690, freq=1671;
+var scale=document.getElementById("scale"), cv=document.getElementById("band"),
+    ctx=cv.getContext("2d"), khz=document.getElementById("khz"),
+    lock=document.getElementById("lock");
+
+function size(){ var r=scale.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1);
+  cv.width=r.width*d; cv.height=r.height*d; ctx.setTransform(d,0,0,d,0,0); }
+size(); addEventListener("resize",size);
+
+function near(){ return Math.max(0,1-Math.abs(freq-CARRIER)/6); }
+function rnd(){ return Math.random(); }
+
+var t=0;
+function draw(){
+  var r=scale.getBoundingClientRect(), W=r.width, H=r.height, n=near();
+  t+=0.016;
+  ctx.clearRect(0,0,W,H);
+
+  /* the band's ticks, sliding under the needle */
+  var span=26;                                   /* khz visible across the window */
+  var left=freq-span/2;
+  ctx.font='10px "Space Mono", monospace';
+  for(var f=Math.ceil(left/2)*2; f<left+span; f+=2){
+    var x=(f-left)/span*W, major=(f%10===0);
+    ctx.strokeStyle= major ? "rgba(224,160,74,.45)" : "rgba(224,160,74,.16)";
+    ctx.beginPath(); ctx.moveTo(x,H*0.62); ctx.lineTo(x,H*0.62-(major?18:9)); ctx.stroke();
+    if(major){ ctx.fillStyle="rgba(142,132,109,.75)"; ctx.textAlign="center";
+      ctx.fillText(String(f), x, H*0.62+16); }
+  }
+
+  /* the noise floor, and the carrier standing up out of it */
+  ctx.beginPath();
+  for(var x2=0;x2<W;x2+=2){
+    var fx=left+x2/W*span;
+    var d=Math.abs(fx-CARRIER);
+    var carrier=Math.exp(-(d*d)/2.2)*0.62;
+    var hiss=(rnd()-0.5)*(0.34-0.20*n);
+    var y=H*0.86 - (carrier*H*0.55 + hiss*H*0.30
+          + Math.sin(fx*2.1+t*3)*carrier*H*0.06);
+    if(x2===0) ctx.moveTo(x2,y); else ctx.lineTo(x2,y);
+  }
+  ctx.strokeStyle="rgba(224,160,74,"+(0.35+0.5*n)+")";
+  ctx.lineWidth=1; ctx.stroke();
+
+  khz.innerHTML=Math.round(freq)+'<small>khz</small>';
+  if(n>0.72){ lock.textContent="carrier locked"; lock.classList.add("on"); }
+  else if(n>0.25){ lock.textContent="something there"; lock.classList.remove("on"); }
+  else { lock.textContent="searching"; lock.classList.remove("on"); }
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+var drag=null;
+function pt(e){ return (e.touches?e.touches[0]:e).clientX; }
+function down(e){ drag={x:pt(e),f:freq}; }
+function move(e){ if(!drag)return;
+  var w=scale.getBoundingClientRect().width;
+  freq=Math.max(LO,Math.min(HI, drag.f - (pt(e)-drag.x)/w*26));
+  if(e.cancelable)e.preventDefault(); }
+function up(){ drag=null; }
+scale.addEventListener("mousedown",down); addEventListener("mousemove",move); addEventListener("mouseup",up);
+scale.addEventListener("touchstart",down,{passive:true});
+addEventListener("touchmove",move,{passive:false}); addEventListener("touchend",up);
+
+/* ── the appointed hour: Sundays 22:00 Mountain ─────────────── */
+(function(){
+  var el=document.getElementById("onair"), txt=document.getElementById("onairTxt");
+  function tick(){
+    var now=new Date();
+    var mt=new Date(now.toLocaleString("en-US",{timeZone:"America/Denver"}));
+    var live = mt.getDay()===0 && mt.getHours()===22;
+    el.classList.toggle("live",live);
+    txt.textContent = live ? "on air" : "sundays · 10pm mt";
+  }
+  tick(); setInterval(tick,30000);
+})();
+
+/* ── the season ─────────────────────────────────────────────── */
+(function(){
+  var titles=["","","","","","","","","","","","",""];
+  var host=document.getElementById("season"), html="";
+  for(var i=1;i<=13;i++){
+    var ready=(i===1);
+    html+='<'+(ready?'a href="broadcast.html"':'div')+' class="slot'+(ready?' ready':'')+'" '+
+      'style="text-decoration:none;border-bottom:none">'+
+      '<span class="n">'+String(i).padStart(2,"0")+'</span>'+
+      '<span class="t">'+(ready?"offered to the next person who plays":"not yet transmitted")+'</span>'+
+      '</'+(ready?'a':'div')+'>';
+  }
+  host.innerHTML=html;
+})();
+</script>
+</body>
+</html>

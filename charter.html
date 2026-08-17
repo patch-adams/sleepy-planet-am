@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>The charter · Sleepy Planet AM</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23090a0d'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23e0a04a' stroke-width='1.6'/%3E%3Ccircle cx='16' cy='16' r='2.4' fill='%23e0a04a'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200;0,6..72,300;1,6..72,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#090a0d; --panel:#101218; --ink:#efe6d4; --dim:#8e846d; --faint:#5c5646;
+    --amber:#e0a04a; --hot:#ffc978; --rust:#b4472f; --line:rgba(224,160,74,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Newsreader",Georgia,serif;-webkit-font-smoothing:antialiased;
+    -webkit-tap-highlight-color:transparent}
+  body{overflow-x:hidden}
+  a{color:var(--amber);text-decoration:none;border-bottom:1px solid rgba(224,160,74,.28)}
+  a:hover{border-color:var(--amber)}
+  .mono{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.26em;
+    text-transform:uppercase;color:var(--dim)}
+  .wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 clamp(16px,5vw,56px)}
+
+  /* ── masthead ─────────────────────────────────────────────── */
+  header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;
+    background:rgba(9,10,13,.92);backdrop-filter:blur(10px)}
+  header .wrap{display:flex;align-items:center;justify-content:space-between;
+    gap:14px;padding-top:14px;padding-bottom:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:baseline;gap:12px}
+  .brand b{font-family:"Space Mono",monospace;font-weight:700;font-size:13px;
+    letter-spacing:.3em;text-transform:uppercase;color:var(--ink)}
+  .onair{display:inline-flex;align-items:center;gap:8px;font-family:"Space Mono",monospace;
+    font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--faint);
+    border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+  .onair i{width:7px;height:7px;border-radius:50%;background:#3a3428;display:inline-block}
+  .onair.live{color:var(--hot);border-color:rgba(255,201,120,.5)}
+  .onair.live i{background:var(--rust);box-shadow:0 0 10px var(--rust);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ── the dial ─────────────────────────────────────────────── */
+  .hero{padding:clamp(40px,8vw,90px) 0 clamp(30px,5vw,50px)}
+  h1{margin:0 0 6px;font-weight:200;font-size:clamp(2.2rem,7vw,4.4rem);line-height:1.02;
+    letter-spacing:-.02em}
+  h1 em{font-style:italic;color:var(--amber)}
+  .tag{font-size:clamp(1rem,2.6vw,1.28rem);color:#cbc0a8;max-width:30em;line-height:1.6;
+    margin:14px 0 0;font-style:italic}
+
+  .tuner{margin:clamp(28px,5vw,48px) 0 0;border:1px solid var(--line);border-radius:6px;
+    background:linear-gradient(180deg,#12141b,#0c0d12);padding:clamp(16px,3vw,26px);
+    box-shadow:0 30px 70px -50px #000 inset,0 20px 60px -40px #000}
+  .scale{position:relative;height:96px;cursor:ew-resize;overflow:hidden;border-radius:3px;
+    background:radial-gradient(120% 140% at 50% 0%,rgba(224,160,74,.08),transparent 60%)}
+  .scale canvas{display:block;width:100%;height:100%}
+  .needle{position:absolute;top:6px;bottom:6px;width:2px;left:50%;background:var(--rust);
+    box-shadow:0 0 12px rgba(180,71,47,.9);pointer-events:none}
+  .readout{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+    flex-wrap:wrap;padding-top:14px}
+  .khz{font-family:"Space Mono",monospace;font-size:clamp(1.6rem,5vw,2.4rem);color:var(--hot);
+    letter-spacing:.06em}
+  .khz small{font-size:.42em;letter-spacing:.24em;color:var(--dim);margin-left:8px}
+  .lock{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--faint);transition:color .3s}
+  .lock.on{color:var(--hot)}
+  .hint{padding-top:8px}
+
+  /* ── sections ─────────────────────────────────────────────── */
+  section{padding:clamp(40px,7vw,80px) 0;border-top:1px solid var(--line)}
+  h2{margin:0 0 6px;font-weight:200;font-size:clamp(1.5rem,4vw,2.3rem);letter-spacing:-.01em}
+  .lede{color:#c2b79f;font-size:clamp(1rem,2.3vw,1.12rem);line-height:1.7;max-width:34em;margin:10px 0 0}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:clamp(18px,3vw,34px);margin-top:clamp(22px,4vw,40px)}
+  .card{border:1px solid var(--line);border-radius:5px;padding:22px;background:rgba(255,255,255,.012)}
+  .card h3{margin:0 0 8px;font-weight:300;font-size:1.2rem;font-style:italic;color:var(--amber)}
+  .card p{margin:0;color:#b8ae97;line-height:1.65;font-size:.98rem}
+  .num{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.24em;color:var(--faint);
+    display:block;margin-bottom:10px}
+
+  /* ── the season ───────────────────────────────────────────── */
+  .season{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;
+    margin-top:clamp(20px,4vw,34px)}
+  .slot{border:1px solid var(--line);border-radius:4px;padding:14px 12px;min-height:96px;
+    display:flex;flex-direction:column;justify-content:space-between;
+    background:rgba(255,255,255,.01);transition:all .25s}
+  .slot .n{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.2em;color:var(--faint)}
+  .slot .t{font-size:.92rem;color:#5f5949;line-height:1.35;font-style:italic}
+  .slot.ready{border-color:rgba(224,160,74,.45);background:rgba(224,160,74,.05)}
+  .slot.ready .n{color:var(--amber)} .slot.ready .t{color:var(--ink)}
+  .slot.ready:hover{background:rgba(224,160,74,.11)}
+
+  /* ── participate ──────────────────────────────────────────── */
+  .steps{counter-reset:s;margin-top:clamp(20px,4vw,36px)}
+  .step{display:flex;gap:clamp(14px,3vw,28px);padding:22px 0;border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step .k{font-family:"Space Mono",monospace;font-size:10px;letter-spacing:.24em;
+    color:var(--faint);min-width:5.5em;padding-top:5px}
+  .step .b h3{margin:0 0 6px;font-weight:300;font-size:1.3rem;font-style:italic}
+  .step .b p{margin:0;color:#b8ae97;line-height:1.68;max-width:32em}
+
+  .btn{display:inline-block;font-family:"Space Mono",monospace;font-size:11px;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--bg);background:var(--amber);
+    border:1px solid var(--amber);border-radius:999px;padding:11px 20px;margin-top:14px;cursor:pointer}
+  .btn:hover{background:var(--hot);border-color:var(--hot)}
+  .btn.ghost{background:transparent;color:var(--amber)}
+  .btn.ghost:hover{background:rgba(224,160,74,.1);color:var(--hot)}
+
+  footer{border-top:1px solid var(--line);padding:34px 0 60px}
+  footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:baseline}
+  .fine{color:var(--faint);font-size:.86rem;line-height:1.7;max-width:34em;margin-top:12px}
+
+  .sheet{max-width:40em;margin:0 auto}
+  .sheet p{color:#c2b79f;line-height:1.75;font-size:clamp(1rem,2.3vw,1.1rem);margin:0 0 1.1em}
+  .sheet h2{margin:44px 0 4px}
+  .sheet ol{color:#c2b79f;line-height:1.75;padding-left:1.2em;margin:0 0 1.4em}
+  .sheet li{margin-bottom:.7em}
+  .sheet em{color:var(--ink)}
+  .rule{border:none;border-top:1px solid var(--line);margin:44px 0}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><b>Sleepy Planet AM</b><span class="mono">1690 khz</span></div>
+  <a class="mono" style="border:none" href="./">&#8617; the station</a>
+</div></header>
+
+<div class="wrap" style="padding-top:clamp(34px,6vw,70px);padding-bottom:clamp(50px,8vw,90px)">
+<div class="sheet">
+  <h1 style="font-size:clamp(1.9rem,6vw,3.2rem)">The charter</h1>
+  <p class="tag" style="margin-bottom:34px">What this station is, and the rules it keeps.</p>
+
+  <h2>What it is</h2>
+  <p>A free public radio station carrying recordings of real imaginal encounters. Somebody
+  is guided into a place that does not exist. They describe what they find. The tape runs,
+  and the best of it goes out on an appointed hour.</p>
+  <p>Nothing here is acted. That is the entire premise, and it is the only thing that cannot
+  be traded away.</p>
+
+  <h2>The rules</h2>
+  <ol>
+    <li><em>The recording is the material.</em> Not a show about the practice. If a broadcast
+    could have been written in advance, it does not belong on this station.</li>
+    <li><em>Consent runs backwards.</em> The traveler hears the cut and says yes before it
+    airs. Never the other way round. Authorising the transmission is part of coming back.</li>
+    <li><em>Every broadcast asks one question and then leaves real silence.</em> Long enough
+    that an answer forms whether or not it is spoken. That silence is the listener's part.</li>
+    <li><em>The advertisements are part of the story.</em> They always were.</li>
+    <li><em>Thirteen and then boxed.</em> A program that never ends is a feed. Each program
+    runs its length, becomes an object, and the next one takes a different form.</li>
+    <li><em>An appointed hour.</em> Sundays at ten, Mountain. Repetition at a set time is
+    the difference between a station and a library.</li>
+    <li><em>Nothing gets fixed in the edit.</em> Hesitation, silence, a traveller losing the
+    thread and finding it again: that is the evidence the thing was real.</li>
+  </ol>
+
+  <hr class="rule">
+
+  <h2>Why radio</h2>
+  <p>Radio has no picture. It arrives and you supply the image, which puts it in exactly the
+  register this practice cares about: more tangible than a thought, less fixed than a thing.
+  Every listener's version differs and none of them is wrong.</p>
+  <p>AM in particular drifts. It fades and returns, it carries noise, and at night it bounces
+  off the ionosphere and reaches you from further away than it has any business reaching.
+  The medium behaves like the subject.</p>
+
+  <h2>Why a real signal</h2>
+  <p>1690 kHz, unlicensed and legal at very low power, covering about one block. Almost
+  nobody will ever hear it that way, and that is fine. It matters that there is an actual
+  carrier in actual air. Otherwise this is a podcast wearing a costume.</p>
+
+  <h2>Who it is for</h2>
+  <p>People who join us, people who write in, people who we imagined. Three kinds of
+  participant, and the third one is not a joke.</p>
+
+  <hr class="rule">
+  <p class="fine">Sleepy Planet AM is made by Mike Marrotte. Broadcasts from somewhere,
+  sent to nowhere, picked up from anywhere.</p>
+  <p style="margin-top:22px"><a class="btn ghost" href="./">Back to the station</a></p>
+</div>
+</div>
+
+<footer><div class="wrap">
+  <div class="mono">Sleepy Planet AM &middot; 1690 khz</div>
+  <div class="mono">signalform</div>
+</div></footer>
+</body>
+</html>
