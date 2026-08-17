@@ -36,7 +36,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#050505;color:var(--in
     0 0 0 5px #0d0b09,
     0 1px 0 5px #2c251e,
     0 40px 90px -40px #000,
-    inset 0 1px 0 rgba(255,220,170,.06);
+    inset 0 1px 0 rgba(255,225,180,.16),
+    inset 0 22px 34px -30px rgba(255,210,150,.22);
 }
 /* brushed metal grain */
 #set::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
@@ -132,14 +133,18 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
 #hiss canvas{width:100%;height:100%;display:block}
 
 /* ── the deck ───────────────────────────────────────────────── */
-.deck{display:flex;align-items:center;gap:clamp(10px,2.4vw,26px);
+.grille{position:absolute;inset:0;width:100%;height:100%;opacity:.85;pointer-events:none}
+.scr{position:absolute;width:15px;height:15px;opacity:.75;pointer-events:none}
+.scr.tl{left:9px;top:9px} .scr.tr{right:9px;top:9px}
+.logo{width:17px;height:17px;flex:0 0 auto;opacity:.9;transform:translateY(2px)}
+.deck{position:relative;display:flex;align-items:center;gap:clamp(10px,2.4vw,26px);
   padding:clamp(10px,1.8vw,18px) clamp(12px,2.6vw,26px);
-  border-top:1px solid #221c17;background:linear-gradient(180deg,#171310,#0e0c0a);
+  border-top:1px solid #221c17;background:#0e0c0a;
   flex-wrap:nowrap;overflow:hidden}
-.knob{width:clamp(56px,9vw,84px);height:clamp(56px,9vw,84px);flex:0 0 auto;
+.deck > *:not(.grille):not(.scr){position:relative;z-index:2}
+.knob{width:clamp(58px,9.2vw,88px);height:clamp(58px,9.2vw,88px);flex:0 0 auto;
   border-radius:50%;cursor:grab;position:relative;
-  background:radial-gradient(circle at 34% 28%,#3b322a,#191512 62%,#0d0b09);
-  box-shadow:0 3px 10px #000, inset 0 1px 0 rgba(255,220,170,.14), inset 0 -8px 14px rgba(0,0,0,.7)}
+  filter:drop-shadow(0 4px 9px rgba(0,0,0,.85))}
 .knob:active{cursor:grabbing}
 .knob svg{position:absolute;inset:0;width:100%;height:100%}
 .klabel{font-size:8px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);
@@ -193,11 +198,57 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <!-- knurled knob: a milled rim of 44 teeth, a domed cap, a lit edge -->
+  <radialGradient id="cap" cx="34%" cy="26%">
+    <stop offset="0%" stop-color="#4b4038"/><stop offset="58%" stop-color="#221c18"/>
+    <stop offset="100%" stop-color="#0d0b09"/>
+  </radialGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#5d5045"/><stop offset="52%" stop-color="#191411"/>
+    <stop offset="100%" stop-color="#332a23"/>
+  </linearGradient>
+  <g id="knurl">
+    <circle cx="50" cy="50" r="48" fill="url(#rim)"/>
+    <g id="teeth" stroke="#0b0908" stroke-width="1.5" opacity=".85"></g>
+    <circle cx="50" cy="50" r="40" fill="url(#cap)"/>
+    <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(255,220,170,.13)" stroke-width="1"/>
+    <ellipse cx="38" cy="32" rx="17" ry="11" fill="rgba(255,235,205,.055)"/>
+  </g>
+  <g id="ptr"><rect x="47.6" y="10" width="4.8" height="24" rx="2.4"/></g>
+
+  <!-- perforated speaker cloth: hole grid on a dark weave -->
+  <pattern id="perf" width="9" height="9" patternUnits="userSpaceOnUse">
+    <rect width="9" height="9" fill="#1a1512"/>
+    <circle cx="2.6" cy="2.6" r="1.55" fill="#050404"/>
+    <circle cx="2.6" cy="2.6" r="1.55" fill="none" stroke="rgba(255,220,170,.11)" stroke-width=".6"/>
+    <circle cx="7.1" cy="7.1" r="1.55" fill="#050404"/>
+    <circle cx="7.1" cy="7.1" r="1.55" fill="none" stroke="rgba(255,220,170,.11)" stroke-width=".6"/>
+  </pattern>
+
+  <!-- a slotted screw, four of them hold the chassis on -->
+  <g id="screw">
+    <circle cx="9" cy="9" r="8" fill="#191512"/>
+    <circle cx="9" cy="9" r="7" fill="url(#cap)"/>
+    <rect x="3.6" y="8.1" width="10.8" height="1.9" rx=".9" fill="#080706"/>
+    <circle cx="9" cy="9" r="7.4" fill="none" stroke="rgba(255,220,170,.10)" stroke-width=".8"/>
+  </g>
+
+  <!-- the mark: a point, and what leaves it -->
+  <g id="mark">
+    <circle cx="16" cy="16" r="2.3" fill="#e8a33c"/>
+    <path d="M16 16 m-6.4 0 a6.4 6.4 0 0 1 12.8 0" fill="none" stroke="#e8a33c" stroke-width="1.5" opacity=".85"/>
+    <path d="M16 16 m-10.6 0 a10.6 10.6 0 0 1 21.2 0" fill="none" stroke="#e8a33c" stroke-width="1.3" opacity=".5"/>
+    <path d="M16 16 m-14.6 0 a14.6 14.6 0 0 1 29.2 0" fill="none" stroke="#e8a33c" stroke-width="1.1" opacity=".24"/>
+  </g>
+</defs></svg>
+
 <div id="room">
 <div id="set">
 
   <div class="plate">
-    <div class="mark"><b>SLEEPY&nbsp;PLANET&nbsp;AM</b><s>1690 kHz &middot; salt lake</s></div>
+    <div class="mark"><svg class="logo" viewBox="0 0 32 32"><use href="#mark"/></svg>
+      <b>SLEEPY&nbsp;PLANET&nbsp;AM</b><s>1690 kHz &middot; salt lake</s></div>
     <div class="lamp" id="lamp"><i></i><span id="lampTxt">sun · 22:00 mt</span></div>
   </div>
 
@@ -208,6 +259,9 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
   </div>
 
   <div class="deck">
+    <svg class="grille" aria-hidden="true"><rect width="100%" height="100%" fill="url(#perf)"/></svg>
+    <svg class="scr tl" viewBox="0 0 18 18"><use href="#screw"/></svg>
+    <svg class="scr tr" viewBox="0 0 18 18"><use href="#screw"/></svg>
     <div class="sw" id="power" title="power"><i></i></div>
     <div class="readout">
       <div class="khz" id="khz">1690<small>kHz</small></div>
@@ -218,11 +272,11 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
       <div class="klabel">signal</div>
     </div>
     <div class="kwrap">
-      <div class="knob" id="vol"><svg viewBox="0 0 100 100"><g id="volg"><line x1="50" y1="14" x2="50" y2="30" stroke="#e8a33c" stroke-width="4" stroke-linecap="round"/></g></svg></div>
+      <div class="knob" id="vol"><svg viewBox="0 0 100 100"><use href="#knurl"/><g id="volg"><use href="#ptr" fill="#e8a33c"/></g></svg></div>
       <div class="klabel">vol</div>
     </div>
     <div class="kwrap">
-      <div class="knob" id="tune"><svg viewBox="0 0 100 100"><g id="tuneg"><line x1="50" y1="10" x2="50" y2="32" stroke="#c8452c" stroke-width="5" stroke-linecap="round"/></g></svg></div>
+      <div class="knob" id="tune"><svg viewBox="0 0 100 100"><use href="#knurl"/><g id="tuneg"><use href="#ptr" fill="#c8452c"/></g></svg></div>
       <div class="klabel">tune</div>
     </div>
   </div>
@@ -252,6 +306,7 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
    ========================================================================= */
 
 var LO=1600, HI=1720, WINDOW=34;      /* kHz visible across the dial */
+var locked=false;   /* schmitt trigger: catches at .58, lets go at .44 */
 var freq=1657.0, power=false, vol=0.65;
 
 var STATIONS=[
@@ -429,18 +484,29 @@ function drawDial(){
   dctx.lineWidth=1; dctx.stroke();
 }
 
+var grainBuf=null, grainCtx=null, grainImg=null;
 function drawHiss(){
   var r=hisscv.getBoundingClientRect(), W=r.width, H=r.height;
   var s=strength();
   hissEl.style.opacity = power ? String(Math.max(0,(1-s))) : "0";
   if(!power || s>0.96){ hctx.clearRect(0,0,W,H); return; }
-  var img=hctx.createImageData(Math.max(1,W|0),Math.max(1,H|0)), d=img.data;
+  /* grain is generated at a quarter scale and blown up — cheaper, and the
+     bigger speckle reads more like an actual off-station screen */
+  var gw=Math.max(2,Math.round(W/4)), gh=Math.max(2,Math.round(H/4));
+  if(!grainBuf || grainBuf.width!==gw || grainBuf.height!==gh){
+    grainBuf=document.createElement("canvas"); grainBuf.width=gw; grainBuf.height=gh;
+    grainCtx=grainBuf.getContext("2d"); grainImg=grainCtx.createImageData(gw,gh);
+  }
+  var d=grainImg.data;
   var a=Math.round(52*(1-s));
   for(var i=0;i<d.length;i+=4){
     var v=Math.random()*255;
     d[i]=v*0.95; d[i+1]=v*0.70; d[i+2]=v*0.36; d[i+3]=a*(Math.random()<0.55?1:0.35);
   }
-  hctx.putImageData(img,0,0);
+  grainCtx.putImageData(grainImg,0,0);
+  hctx.clearRect(0,0,W,H);
+  hctx.imageSmoothingEnabled=true;
+  hctx.drawImage(grainBuf,0,0,W,H);
   /* a rolling bar, the way an unlocked signal crawls up the screen */
   var y=((T*0.13)%1.6-0.3)*H;
   var gr=hctx.createLinearGradient(0,y,0,y+H*0.22);
@@ -477,10 +543,13 @@ var win=document.getElementById("winScroll"), shown=null;
 function paint(){
   var n=nearest(), s=strength();
   var glass=document.getElementById("glass");
-  glass.classList.toggle("off", !power || s<0.55 || warm<0.55);
-  if(power && s>=0.55){
+  if(!power){ locked=false; }
+  else if(!locked && s>0.58){ locked=true; }
+  else if(locked && s<0.44){ locked=false; }
+  glass.classList.toggle("off", !locked || warm<0.55);
+  if(power && locked){
     if(shown!==n.st.f){ shown=n.st.f; win.innerHTML=n.st.body(); win.scrollTop=0; }
-  } else if(shown!==null && (!power || s<0.5)){ shown=null; }
+  } else if(shown!==null && !locked){ shown=null; }
 }
 
 /* ── readouts ───────────────────────────────────────────────── */
@@ -530,6 +599,7 @@ function frame(ts){
   if(power){ warm=Math.min(1,warm+dt/1.1);
     /* every set drifts. two slow sines, never in phase. */
     freq += (Math.sin(T*0.083)*0.0022 + Math.sin(T*0.031+1.7)*0.0014); }
+  paintTune();
   drawDial(); drawHiss(); bleed(); paint(); readouts(); nudge(dt); audioFollow();
   requestAnimationFrame(frame);
 }
@@ -588,7 +658,9 @@ function togglePower(){
   else { click(); shown=null; win.innerHTML=""; }
 }
 pw.addEventListener("click",function(e){ e.stopPropagation(); togglePower(); });
-veil.addEventListener("click",function(){
+veil.addEventListener("click",function(e){
+  e.stopPropagation();
+  if(veil.classList.contains("gone")) return;
   veil.classList.add("gone");
   if(!power) togglePower();
 });
@@ -610,6 +682,38 @@ veil.addEventListener("click",function(){
   var q=location.search;
   var f=/[?&]f=([0-9.]+)/.exec(q); if(f) freq=parseFloat(f[1]);
   if(/[?&]on=1/.test(q)){ veil.classList.add("gone"); power=true; pw.classList.add("on"); }
+})();
+
+(function knurl(){
+  var g=document.getElementById("teeth"), h="";
+  for(var i=0;i<44;i++){
+    var a=i/44*Math.PI*2;
+    h+='<line x1="'+(50+Math.cos(a)*40.5).toFixed(2)+'" y1="'+(50+Math.sin(a)*40.5).toFixed(2)
+      +'" x2="'+(50+Math.cos(a)*47.5).toFixed(2)+'" y2="'+(50+Math.sin(a)*47.5).toFixed(2)+'"/>';
+  }
+  g.innerHTML=h;
+})();
+
+/* the case metal, generated once: fine horizontal brush plus slow blotching,
+   seeded so the same set is the same set every time you switch it on */
+(function caseSkin(){
+  var w=420,h=300,c=document.createElement("canvas"); c.width=w; c.height=h;
+  var x=c.getContext("2d"), seed=1690;
+  function rnd(){ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; }
+  var img=x.createImageData(w,h), d=img.data;
+  for(var j=0;j<h;j++){
+    var row=(rnd()-0.5)*7;
+    for(var i=0;i<w;i++){
+      var brush=(rnd()-0.5)*11 + row;
+      var blot=Math.sin(i*0.011+j*0.006)*4 + Math.sin(i*0.004-j*0.017)*3;
+      var v=24+brush+blot, k=(j*w+i)*4;
+      d[k]=v+3; d[k+1]=v; d[k+2]=v-3; d[k+3]=255;
+    }
+  }
+  x.putImageData(img,0,0);
+  var url=c.toDataURL();
+  document.getElementById("set").style.backgroundImage="url("+url+")";
+  document.querySelector(".plate").style.backgroundImage="url("+url+")";
 })();
 
 sizeAll();
