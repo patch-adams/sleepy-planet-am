@@ -164,6 +164,11 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
 .bars i{width:5px;background:#2a2119;border-radius:1px;transition:background .12s,height .12s}
 .bars i.lit{background:var(--amber);box-shadow:0 0 7px rgba(232,163,60,.7)}
 
+.scan{flex:0 0 auto;font-family:"Space Mono",monospace;font-size:9px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--dim);background:rgba(232,163,60,.04);
+  border:1px solid rgba(232,163,60,.22);border-radius:3px;padding:8px 11px;cursor:pointer}
+.scan:hover{color:var(--hot);border-color:rgba(232,163,60,.55)}
+.scan.on{color:#0b0908;background:var(--amber);border-color:var(--amber)}
 .sw{flex:0 0 auto;width:clamp(40px,6vw,54px);height:clamp(22px,3.4vw,28px);border-radius:999px;
   background:#0c0a09;box-shadow:inset 0 2px 6px #000,0 1px 0 rgba(255,220,170,.06);
   position:relative;cursor:pointer}
@@ -263,6 +268,7 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
     <svg class="scr tl" viewBox="0 0 18 18"><use href="#screw"/></svg>
     <svg class="scr tr" viewBox="0 0 18 18"><use href="#screw"/></svg>
     <div class="sw" id="power" title="power"><i></i></div>
+    <button class="scan" id="scan" title="scan the band">scan</button>
     <div class="readout">
       <div class="khz" id="khz">1690<small>kHz</small></div>
       <div class="state" id="state">off</div>
@@ -284,7 +290,7 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
   <div id="nudge">turn the dial</div>
   <div id="veil">
     <div class="t">Sleepy Planet AM</div>
-    <div class="s">switch on</div>
+    <div class="s" id="veilSub">switch on</div>
   </div>
 
 </div>
@@ -309,71 +315,212 @@ var LO=1600, HI=1720, WINDOW=34;      /* kHz visible across the dial */
 var locked=false;   /* schmitt trigger: catches at .58, lets go at .44 */
 var freq=1657.0, power=false, vol=0.65;
 
+/* ── who lives on the band ──────────────────────────────────────
+   Twenty marks across a hundred and twenty kilohertz. Some are wide and easy,
+   some are a whisper you have to hunt for, two only exist at night, and one is
+   dead air from a station that signed off and never came back. `w` is how far
+   the carrier reaches; small numbers are hard to find on purpose. */
+function visits(){ try{ return parseInt(localStorage.getItem("spam.visits")||"0",10)||0; }catch(e){ return 0; } }
+function bump(){ try{ localStorage.setItem("spam.visits",String(visits()+1)); }catch(e){} }
+function heard(f){ try{ var h=JSON.parse(localStorage.getItem("spam.heard")||"[]");
+  if(h.indexOf(f)<0){ h.push(f); localStorage.setItem("spam.heard",JSON.stringify(h)); } }catch(e){} }
+function heardCount(){ try{ return (JSON.parse(localStorage.getItem("spam.heard")||"[]")).length; }catch(e){ return 0; } }
+function pick(a,seedn){ return a[Math.abs(Math.floor(seedn))%a.length]; }
+
+var ADS=[
+ ["JIMMY&rsquo;S JOLLY STORE","Purpose, transcendence, inner peace, whatever you need. Aisle nine. Open until you stop looking."],
+ ["THE NIGHT DRAWER","Everything you meant to say, stored flat, no creasing. Collection Tuesdays."],
+ ["ALLBRIGHT &amp; SON, DOORFITTERS","Hung true since 1911. We do not ask what is behind it. We only ask that it close."],
+ ["CONTINENTAL FEELINGS CO.","Now in the smaller size. Fits in the hand. Fits in the mouth. Does not fit in the chest."],
+ ["THE FOUND OFFICE","Lost something you cannot name? Describe the shape of the hole. We will look."],
+ ["MERIDIAN SLEEP","Eight hours, guaranteed, or the night is yours to keep."]
+];
+var WEATHER=[
+ "Low fog over the long hallway. Doors sticking. Visibility, one room.",
+ "Clear and cold in the orchard. Something moving in the third row that is not wind.",
+ "Warm front through the stairwell overnight. Expect stairs where there were none.",
+ "Rain on the far side only. The near side stays dry and will not say why.",
+ "Still. Completely still. This is the third night of it and we do not like it."
+];
+var LETTERS=[
+ ["R., by voice","I got to a kitchen. It was my grandmother&rsquo;s but the window was wrong, it looked out on water. I stood there a long time. I did not go in further. I think that was allowed."],
+ ["unsigned","There was a man at a desk who would not look up. I asked twice. On the third time he said &lsquo;you already know&rsquo; and I did, actually. I did know."],
+ ["T., written","You asked what I left behind. A coat. It was not mine when I went in and it was mine when I came out and I left it anyway."],
+ ["M., by voice","Nothing happened. I want to be honest about that. Forty minutes of nothing and then one thing, at the end, and the one thing has not left me."]
+];
+var INVENTORY=[
+ "a brass key, unlabelled, warm",
+ "one boot, left, dry",
+ "a photograph of a room the traveller had not entered yet",
+ "a length of rope, coiled, recently used",
+ "a bowl of water that would not spill",
+ "somebody else&rsquo;s glasses",
+ "a door handle with no door attached",
+ "a folded note, still folded"
+];
+
 var STATIONS=[
- {f:1690, id:"the station", body:function(){ return ''
-    +'<div class="kick">carrier &middot; 1690 khz</div>'
-    +'<h1 class="big">A public station<br>of the <em>imaginal</em>.</h1>'
-    +'<p class="say">People who join us, people who write in, people who we imagined.</p>'
-    +'<p class="say">Every broadcast is one real session. Somebody is guided into a place '
-    +'that does not exist, they describe what they find, and the tape runs. Twenty minutes: '
-    +'two from the Keeper, then the passage, then what they carried out. Nothing here is acted.</p>'
-    +'<p class="tiny">1666 the charter &nbsp;·&nbsp; 1702 the season &nbsp;·&nbsp; '
-    +'1638 correspondence &nbsp;·&nbsp; 1719 &mdash;</p>';
-  }},
- {f:1702, id:"the season", body:function(){
-    var g=''; for(var i=1;i<=13;i++){ var on=(i===1);
-      g+='<div class="cell'+(on?' on':'')+'"><span>'
-        +(on?'offered':'&mdash;')+'</span><u>'+String(i).padStart(2,"0")+'</u></div>'; }
-    return ''
-    +'<div class="kick">1702 khz &middot; programme one</div>'
-    +'<h1 class="big"><em>Field Recordings</em><br>from Nowhere</h1>'
-    +'<p class="say">Thirteen broadcasts, Sundays at ten Mountain. Then the programme is '
-    +'boxed and the next takes a different form. A station that never ends is a feed.</p>'
-    +'<div class="grid13">'+g+'</div>'+'<p class="tiny" style="margin-top:14px">one offered &middot; twelve unrecorded</p>';
-  }},
- {f:1666, id:"the charter", body:function(){ return ''
-    +'<div class="kick">1666 khz &middot; standing orders</div>'
-    +'<h1 class="big">The charter</h1>'
-    +'<ol class="rules">'
-    +'<li><b>The recording is the material.</b> If a broadcast could have been written in advance it does not air.</li>'
-    +'<li><b>Consent runs backwards.</b> The traveller hears the cut and says yes before it goes out. Authorising the transmission is part of coming back.</li>'
-    +'<li><b>One question, then real silence.</b> Long enough that an answer forms whether or not it is spoken.</li>'
-    +'<li><b>The advertisements are part of the story.</b> They always were.</li>'
-    +'<li><b>Thirteen and then boxed.</b> Each programme runs its length, becomes an object, and the next takes a different form.</li>'
-    +'<li><b>An appointed hour.</b> Repetition at a set time is the difference between a station and a library.</li>'
-    +'<li><b>Nothing gets fixed in the edit.</b> The hesitation is the evidence it was real.</li>'
-    +'</ol>'
-    +'<p class="say" style="margin-top:1.2em">1690 kHz is unlicensed and legal at very low power, '
-    +'covering about one block of Salt Lake City. Almost nobody will hear it that way. It matters '
-    +'that the carrier is real air.</p>';
-  }},
- {f:1638, id:"correspondence", body:function(){ return ''
+ {f:1601, w:2.4, id:"", body:function(){ return ''
+    +'<div class="kick">1601 khz</div>'
+    +'<h1 class="big" style="font-size:clamp(1.2rem,3.4vw,2rem)"><em>Carrier only.</em></h1>'
+    +'<p class="say">Somebody is holding this frequency open and putting nothing on it. '
+    +'That is allowed. That has always been allowed.</p>'; }},
+
+ {f:1607, w:3.2, id:"advertisement", body:function(){
+    var ad=pick(ADS, Date.now()/9000);
+    return '<div class="kick">1607 khz &middot; paid programming</div>'
+      +'<h1 class="big">'+ad[0]+'</h1><p class="say">'+ad[1]+'</p>'
+      +'<p class="tiny">the advertisements are part of the story</p>'; }},
+
+ {f:1612, w:3.0, id:"station id", body:function(){ return ''
+    +'<div class="kick">1612 khz &middot; identification</div>'
+    +'<h1 class="big">SPAM</h1>'
+    +'<p class="say">Broadcasts from somewhere, sent to nowhere, picked up from anywhere.</p>'
+    +'<p class="tiny">surrealist realist imagination &middot; signalform &middot; salt lake city</p>'; }},
+
+ {f:1618, w:2.6, id:"the log", body:function(){
+    var v=visits(), h=heardCount();
+    return '<div class="kick">1618 khz &middot; the log</div>'
+      +'<h1 class="big">You have been here '+(v<=1?'once':v+' times')+'.</h1>'
+      +'<p class="say">Carriers found: <em>'+h+' of 20</em>. The set keeps this. Nobody else does.</p>'
+      +'<p class="say">Others, tonight: a listener in a car park who stayed on 1657 for eleven minutes. '
+      +'Somebody who found 1719 first and has not come back. One set left switched on and unattended '
+      +'since Thursday, still drifting.</p>'; }},
+
+ {f:1624, w:1.9, id:"", body:function(){
+    var g="", seed=Math.floor(Date.now()/7000)%99991;
+    function dig(k){ var x=Math.sin(seed*0.7371+k*12.9898)*43758.5453; return Math.floor((x-Math.floor(x))*10); }
+    for(var i=0;i<12;i++){ var n=""; for(var j=0;j<5;j++) n+=dig(i*5+j);
+      g+='<span style="display:inline-block;margin:0 .7em .5em 0">'+n+'</span>'; }
+    return '<div class="kick">1624 khz</div>'
+      +'<h1 class="big" style="font-size:clamp(1.4rem,4vw,2.4rem);letter-spacing:.14em;'
+      +'font-family:\'Space Mono\',monospace">'+g+'</h1>'
+      +'<p class="tiny">repeating &middot; no station identification &middot; do not reply</p>'; }},
+
+ {f:1630, w:2.8, id:"weather", body:function(){ return ''
+    +'<div class="kick">1630 khz &middot; conditions</div>'
+    +'<h1 class="big">Weather for nowhere</h1>'
+    +'<p class="say">'+pick(WEATHER, Date.now()/11000)+'</p>'
+    +'<p class="tiny">issued hourly &middot; not to be used for navigation</p>'; }},
+
+ {f:1638, w:3.4, id:"correspondence", body:function(){ return ''
     +'<div class="kick">1638 khz &middot; transmit back</div>'
     +'<h1 class="big">Three ways in</h1>'
     +'<p class="say"><em>Listen.</em> Be there at the hour. The silence after the question is your part; there is nothing to press.</p>'
     +'<p class="say"><em>Write in.</em> A voice memo or a few lines. Some are read on the air in the sender&rsquo;s own words.</p>'
-    +'<p class="say"><em>Come in.</em> Ask for a passage. Ninety minutes, nothing to prepare, nothing to get right. Some become broadcasts, and only with your say-so after you have heard the cut.</p>'
+    +'<p class="say"><em>Come in.</em> Ask for a passage. Ninety minutes, nothing to prepare. Some become broadcasts, and only with your say-so after you have heard the cut.</p>'
     +'<a class="pill" href="mailto:hello@sleepyplanet.studio?subject=SPAM%20%E2%80%94%20what%20I%20saw">Write in</a> '
-    +'<a class="pill o" href="mailto:hello@sleepyplanet.studio?subject=SPAM%20%E2%80%94%20a%20passage">Ask for a passage</a>';
-  }},
- {f:1719, id:"—", body:function(){
+    +'<a class="pill o" href="mailto:hello@sleepyplanet.studio?subject=SPAM%20%E2%80%94%20a%20passage">Ask for a passage</a>'; }},
+
+ {f:1644, w:2.7, id:"letters", body:function(){
+    var L=pick(LETTERS, Date.now()/13000);
+    return '<div class="kick">1644 khz &middot; read on the air</div>'
+      +'<h1 class="big" style="font-size:clamp(1.3rem,3.6vw,2.1rem)">&ldquo;'+L[1]+'&rdquo;</h1>'
+      +'<p class="tiny">'+L[0]+'</p>'; }},
+
+ {f:1651, w:2.3, id:"the hallway", body:function(){ return ''
+    +'<div class="kick">1651 khz &middot; relay</div>'
+    +'<h1 class="big">There is a hallway</h1>'
+    +'<p class="say">Not on this band. You walk it yourself, and the doors do not tell you '
+    +'what is behind them.</p>'
+    +'<a class="pill o" href="https://patch-adams.github.io/ascii-city/" target="_blank" rel="noopener">Walk it</a>'; }},
+
+ {f:1657, w:2.2, id:"", body:function(){ return ''
+    +'<div class="kick">1657 khz &middot; unattended</div>'
+    +'<h1 class="big" style="font-size:clamp(1.2rem,3.4vw,2rem)"><em>&hellip; and that concludes our broadcast day.</em></h1>'
+    +'<p class="say">We thank you for your company. We will return at the usual hour.</p>'
+    +'<p class="tiny">this sign-off has been looping for some time</p>'; }},
+
+ {f:1666, w:3.4, id:"the charter", body:function(){ return ''
+    +'<div class="kick">1666 khz &middot; standing orders</div>'
+    +'<h1 class="big">The charter</h1>'
+    +'<ol class="rules">'
+    +'<li><b>The recording is the material.</b> If a broadcast could have been written in advance it does not air.</li>'
+    +'<li><b>Consent runs backwards.</b> The traveller hears the cut and says yes before it goes out.</li>'
+    +'<li><b>One question, then real silence.</b> Long enough that an answer forms whether or not it is spoken.</li>'
+    +'<li><b>The advertisements are part of the story.</b> They always were.</li>'
+    +'<li><b>Thirteen and then boxed.</b> Each programme runs its length and the next takes a different form.</li>'
+    +'<li><b>An appointed hour.</b> Repetition at a set time is the difference between a station and a library.</li>'
+    +'<li><b>Nothing gets fixed in the edit.</b> The hesitation is the evidence it was real.</li>'
+    +'</ol>'; }},
+
+ {f:1672, w:2.6, id:"the keeper", body:function(){ return ''
+    +'<div class="kick">1672 khz</div>'
+    +'<h1 class="big">Who holds it</h1>'
+    +'<p class="say">One person, in a room in Salt Lake City, who has been running these sessions '
+    +'for a few years and does not have a good title for it. He does not go in. He holds the door '
+    +'and asks what you can see.</p>'
+    +'<p class="say">The transmitter is legal, barely, and reaches about one block.</p>'; }},
+
+ {f:1678, w:2.1, id:"", body:function(){
+    var g=""; for(var i=0;i<5;i++) g+='<li>'+pick(INVENTORY, Date.now()/15000+i*7)+'</li>';
+    return '<div class="kick">1678 khz &middot; left behind</div>'
+      +'<h1 class="big" style="font-size:clamp(1.3rem,3.6vw,2.1rem)">Lost property</h1>'
+      +'<ol class="rules">'+g+'</ol>'
+      +'<p class="tiny">unclaimed &middot; held indefinitely</p>'; }},
+
+ {f:1684, w:2.0, id:"", night:true, body:function(){ return ''
+    +'<div class="kick">1684 khz &middot; after hours</div>'
+    +'<h1 class="big" style="font-size:clamp(1.3rem,3.8vw,2.2rem)"><em>You found this at night.</em></h1>'
+    +'<p class="say">It is not here in the daytime. Not hidden, not switched off. Not here.</p>'
+    +'<p class="say">There is another one further up the band that behaves the same way. '
+    +'You will have to be awake for it.</p>'; }},
+
+ {f:1690, w:4.2, id:"the station", body:function(){ return ''
+    +'<div class="kick">carrier &middot; 1690 khz</div>'
+    +'<h1 class="big">A public station<br>of the <em>imaginal</em>.</h1>'
+    +'<p class="say">People who join us, people who write in, people who we imagined.</p>'
+    +'<p class="say">Every broadcast is one real session. Somebody is guided into a place that '
+    +'does not exist, they describe what they find, and the tape runs. Twenty minutes: two from '
+    +'the Keeper, then the passage, then what they carried out. Nothing here is acted.</p>'
+    +'<p class="tiny">twenty carriers on this band &middot; you have found '+heardCount()+'</p>'; }},
+
+ {f:1696, w:2.5, id:"tape 00", body:function(){ return ''
+    +'<div class="kick">1696 khz &middot; before the programme</div>'
+    +'<h1 class="big">Tape 00</h1>'
+    +'<p class="say">There was one before the season started. It was not broadcast. The traveller '
+    +'heard the cut and said no, and that was the right answer, and it is why the rule exists.</p>'
+    +'<p class="say">The tape is kept. It is not played.</p>'; }},
+
+ {f:1702, w:3.6, id:"the season", body:function(){
+    var g=''; for(var i=1;i<=13;i++){ var on=(i===1);
+      g+='<div class="cell'+(on?' on':'')+'"><span>'+(on?'offered':'&mdash;')+'</span><u>'
+        +String(i).padStart(2,"0")+'</u></div>'; }
+    return '<div class="kick">1702 khz &middot; programme one</div>'
+    +'<h1 class="big"><em>Field Recordings</em><br>from Nowhere</h1>'
+    +'<p class="say">Thirteen broadcasts, Sundays at ten Mountain. Then the programme is boxed and '
+    +'the next takes a different form. A station that never ends is a feed.</p>'
+    +'<div class="grid13">'+g+'</div>'
+    +'<p class="tiny" style="margin-top:14px">one offered &middot; twelve unrecorded</p>'; }},
+
+ {f:1708, w:2.9, id:"advertisement", body:function(){
+    var ad=pick(ADS, Date.now()/9000+3);
+    return '<div class="kick">1708 khz &middot; paid programming</div>'
+      +'<h1 class="big">'+ad[0]+'</h1><p class="say">'+ad[1]+'</p>'
+      +'<p class="tiny">rates on application &middot; we do not vet claims</p>'; }},
+
+ {f:1713, w:1.8, id:"", night:true, body:function(){ return ''
+    +'<div class="kick">1713 khz</div>'
+    +'<h1 class="big" style="font-size:clamp(1.2rem,3.4vw,2rem)"><em>Six above this one.</em></h1>'
+    +'<p class="say">That is all. Six above this one, and do not stay long.</p>'; }},
+
+ {f:1719, w:2.0, id:"", body:function(){
     var lines=["The door you did not take is still open.",
                "Somebody wrote in about a room with no floor. We have not replied.",
                "There is a frequency below this one that only works in the rain.",
                "You were here before. The log says so.",
-               "Nothing is scheduled. Come back at the hour."];
-    var i=Math.floor(Math.random()*lines.length);
+               "Nothing is scheduled. Come back at the hour.",
+               "The set you are using is not the only one switched on.",
+               "Ask for the second waypoint. He will know what you mean."];
     return '<div class="kick">1719 khz &middot; unmarked</div>'
-      +'<h1 class="big" style="font-size:clamp(1.3rem,3.6vw,2.2rem)"><em>'+lines[i]+'</em></h1>'
-      +'<p class="tiny">tune away and back for another</p>';
-  }},
- {f:1612, id:"station id", body:function(){ return ''
-    +'<div class="kick">1612 khz &middot; identification</div>'
-    +'<h1 class="big">SPAM</h1>'
-    +'<p class="say">Broadcasts from somewhere, sent to nowhere, picked up from anywhere.</p>'
-    +'<p class="tiny">surrealist realist imagination &middot; signalform &middot; salt lake city</p>';
-  }}
+      +'<h1 class="big" style="font-size:clamp(1.3rem,3.6vw,2.2rem)"><em>'
+      +pick(lines,Date.now()/6000)+'</em></h1>'
+      +'<p class="tiny">tune away and back for another</p>'; }}
 ];
+
+function isNight(){ var h=new Date().getHours(); return h>=22||h<4; }
+function live(){ var o=[]; for(var i=0;i<STATIONS.length;i++){
+  if(STATIONS[i].night && !isNight()) continue; o.push(STATIONS[i]); } return o; }
 
 /* ── audio ──────────────────────────────────────────────────── */
 var AC=null, noiseSrc, bp, noiseGain, humOsc, humGain, hetOsc, hetGain, master;
@@ -413,12 +560,14 @@ function click(){
 
 /* ── station maths ──────────────────────────────────────────── */
 function nearest(){
-  var best=STATIONS[0], bd=1e9;
-  for(var i=0;i<STATIONS.length;i++){ var d=Math.abs(freq-STATIONS[i].f);
-    if(d<bd){ bd=d; best=STATIONS[i]; } }
-  return {st:best, d:bd};
+  var L=live(), best=L[0], bs=-1;
+  for(var i=0;i<L.length;i++){
+    var sN=Math.max(0,1-Math.abs(freq-L[i].f)/(L[i].w||3));
+    if(sN>bs){ bs=sN; best=L[i]; }
+  }
+  return {st:best, d:Math.abs(freq-best.f), s:bs};
 }
-function strength(){ var n=nearest(); return Math.max(0,1-n.d/5.0); }   /* 0..1 */
+function strength(){ return nearest().s; }
 
 /* ── the dial face ──────────────────────────────────────────── */
 var dial=document.getElementById("dial"), dctx=dial.getContext("2d");
@@ -456,14 +605,17 @@ function drawDial(){
   }
 
   /* the stations, printed on the glass like a real dial */
-  for(var i=0;i<STATIONS.length;i++){
-    var s=STATIONS[i], x2=(s.f-left)/WINDOW*W;
+  var LV=live();
+  for(var i=0;i<LV.length;i++){
+    var st=LV[i], x2=(st.f-left)/WINDOW*W;
     if(x2<-60||x2>W+60) continue;
-    var close=Math.max(0,1-Math.abs(freq-s.f)/5);
-    dctx.fillStyle="rgba(255,208,138,"+(0.30+0.7*close)+")";
-    dctx.font='9px "Space Mono", monospace';
-    dctx.fillText(s.id.toUpperCase(), x2, 15);
-    dctx.strokeStyle="rgba(255,208,138,"+(0.25+0.75*close)+")";
+    var close=Math.max(0,1-Math.abs(freq-st.f)/(st.w||3));
+    if(st.id){
+      dctx.fillStyle="rgba(255,208,138,"+(0.12+0.85*close)+")";
+      dctx.font='9px "Space Mono", monospace';
+      dctx.fillText(st.id.toUpperCase(), x2, 15);
+    }
+    dctx.strokeStyle="rgba(255,208,138,"+(0.14+0.8*close)+")";
     dctx.lineWidth= close>0.7 ? 2 : 1;
     dctx.beginPath(); dctx.moveTo(x2,20); dctx.lineTo(x2,H-30); dctx.stroke();
   }
@@ -471,10 +623,10 @@ function drawDial(){
   /* the spectrum trace along the bottom */
   dctx.beginPath();
   for(var x3=0;x3<W;x3+=2){
-    var fx=left+x3/W*WINDOW, peak=0;
-    for(var k=0;k<STATIONS.length;k++){
-      var dd=fx-STATIONS[k].f;
-      peak=Math.max(peak, Math.exp(-(dd*dd)/1.6));
+    var fx=left+x3/W*WINDOW, peak=0, LS=live();
+    for(var k=0;k<LS.length;k++){
+      var dd=(fx-LS[k].f)/((LS[k].w||3)/2.2);
+      peak=Math.max(peak, Math.exp(-(dd*dd)/1.6)*Math.min(1,(LS[k].w||3)/3.6));
     }
     var hiss=(Math.random()-0.5)*(0.30-0.22*strength());
     var y=H-16 - (peak*(H*0.42) + hiss*(H*0.24) + Math.sin(fx*3+T*4)*peak*3);
@@ -548,7 +700,7 @@ function paint(){
   else if(locked && s<0.44){ locked=false; }
   glass.classList.toggle("off", !locked || warm<0.55);
   if(power && locked){
-    if(shown!==n.st.f){ shown=n.st.f; win.innerHTML=n.st.body(); win.scrollTop=0; }
+    if(shown!==n.st.f){ shown=n.st.f; win.innerHTML=n.st.body(); win.scrollTop=0; heard(n.st.f); }
   } else if(shown!==null && !locked){ shown=null; }
 }
 
@@ -596,6 +748,11 @@ function audioFollow(){
 var last=null;
 function frame(ts){
   var dt=(last===null)?0:Math.min(0.05,(ts-last)/1000); last=ts; T+=dt;
+  if(scanning && power){
+    freq += dt*26;
+    if(freq>HI){ freq=LO; }
+    if(strength()>0.80){ scanning=false; document.getElementById("scan").classList.remove("on"); }
+  }
   if(power){ warm=Math.min(1,warm+dt/1.1);
     /* every set drifts. two slow sines, never in phase. */
     freq += (Math.sin(T*0.083)*0.0022 + Math.sin(T*0.031+1.7)*0.0014); }
@@ -632,7 +789,8 @@ rotary(document.getElementById("vol"),"volg",
 /* dragging the dial face itself */
 (function(){
   var wrap=document.getElementById("dialwrap"), d=null;
-  function down(e){ d={x:px(e),f:freq}; }
+  function down(e){ d={x:px(e),f:freq}; scanning=false;
+    document.getElementById("scan").classList.remove("on"); }
   function move(e){ if(!d)return;
     var w=wrap.getBoundingClientRect().width;
     freq=Math.max(LO,Math.min(HI, d.f-(px(e)-d.x)/w*WINDOW));
@@ -650,11 +808,19 @@ addEventListener("keydown",function(e){
 });
 
 /* ── power ──────────────────────────────────────────────────── */
+var scanning=false;
+document.getElementById("scan").addEventListener("click",function(e){
+  e.stopPropagation();
+  if(!power) return;
+  scanning=!scanning; this.classList.toggle("on",scanning);
+  if(scanning) freq+=2.2;      /* step off the current carrier or it stops instantly */
+});
+
 var pw=document.getElementById("power"), veil=document.getElementById("veil");
 var warm=0;
 function togglePower(){
   power=!power; pw.classList.toggle("on",power);
-  if(power){ warm=0; audioUp(); if(AC&&AC.state==="suspended")AC.resume(); click(); }
+  if(power){ warm=0; bump(); audioUp(); if(AC&&AC.state==="suspended")AC.resume(); click(); }
   else { click(); shown=null; win.innerHTML=""; }
 }
 pw.addEventListener("click",function(e){ e.stopPropagation(); togglePower(); });
@@ -714,6 +880,10 @@ veil.addEventListener("click",function(e){
   var url=c.toDataURL();
   document.getElementById("set").style.backgroundImage="url("+url+")";
   document.querySelector(".plate").style.backgroundImage="url("+url+")";
+})();
+
+(function(){ var v=visits(), h=heardCount(), el=document.getElementById("veilSub");
+  if(v>0) el.innerHTML = h>0 ? ("welcome back &middot; "+h+" of 20 found") : "welcome back";
 })();
 
 sizeAll();
