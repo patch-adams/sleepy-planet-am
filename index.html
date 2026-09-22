@@ -130,7 +130,7 @@ ol.rules b{color:var(--hot);font-weight:400;font-style:italic}
 /* static wash when off-station */
 #hiss{position:absolute;inset:clamp(74px,13vh,104px) 0 0 0;pointer-events:none;z-index:5;
   opacity:0;transition:opacity .25s}
-#hiss canvas{width:100%;height:100%;display:block}
+#hiss canvas{width:100%;height:100%;display:block;image-rendering:auto}
 
 /* ── the deck ───────────────────────────────────────────────── */
 .grille{position:absolute;inset:0;width:100%;height:100%;opacity:.85;pointer-events:none}
@@ -585,15 +585,26 @@ function strength(){ return nearest().s; }
 var dial=document.getElementById("dial"), dctx=dial.getContext("2d");
 var hisscv=document.getElementById("hisscv"), hctx=hisscv.getContext("2d");
 var hissEl=document.getElementById("hiss");
-function fit(c){ var r=c.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1);
+function fit(c, cap){ var r=c.getBoundingClientRect(), d=Math.min(cap||2,devicePixelRatio||1);
   c.width=Math.max(1,r.width*d); c.height=Math.max(1,r.height*d);
   c.getContext("2d").setTransform(d,0,0,d,0,0); return r; }
-function sizeAll(){ fit(dial); fit(hisscv); }
+/* Rects were read every frame (two forced layouts per frame, on top of the paint).
+   They only change on resize, so they are measured here and kept. */
+var RECT={dial:{width:0,height:0}, hiss:{width:0,height:0}};
+function sizeAll(){
+  RECT.dial=fit(dial,2);
+  /* the hiss is noise: a quarter-size buffer stretched by CSS looks the same and
+     costs a sixteenth of the pixels. This is what was filling memory on a phone. */
+  var r=hisscv.getBoundingClientRect();
+  hisscv.width=Math.max(2,Math.round(r.width/3)); hisscv.height=Math.max(2,Math.round(r.height/3));
+  hctx.setTransform(1,0,0,1,0,0);
+  RECT.hiss={width:hisscv.width, height:hisscv.height};
+}
 addEventListener("resize",sizeAll);
 
 var T=0;
 function drawDial(){
-  var r=dial.getBoundingClientRect(), W=r.width, H=r.height;
+  var r=RECT.dial, W=r.width, H=r.height;
   dctx.clearRect(0,0,W,H);
   if(!power){ return; }
   var left=freq-WINDOW/2;
@@ -650,30 +661,23 @@ function drawDial(){
 
 var grainBuf=null, grainCtx=null, grainImg=null;
 function drawHiss(){
-  var r=hisscv.getBoundingClientRect(), W=r.width, H=r.height;
+  var r=RECT.hiss, W=r.width, H=r.height;
   var s=strength();
   hissEl.style.opacity = power ? String(Math.max(0,(1-s))) : "0";
   if(!power || s>0.96){ hctx.clearRect(0,0,W,H); return; }
-  /* grain is generated at a quarter scale and blown up — cheaper, and the
-     bigger speckle reads more like an actual off-station screen */
-  var gw=Math.max(2,Math.round(W/4)), gh=Math.max(2,Math.round(H/4));
-  if(!grainBuf || grainBuf.width!==gw || grainBuf.height!==gh){
-    grainBuf=document.createElement("canvas"); grainBuf.width=gw; grainBuf.height=gh;
-    grainCtx=grainBuf.getContext("2d"); grainImg=grainCtx.createImageData(gw,gh);
-  }
+  /* the canvas IS the small buffer now; CSS stretches it */
+  var gw=W, gh=H;
+  if(!grainImg || grainImg.width!==gw || grainImg.height!==gh){ grainImg=hctx.createImageData(gw,gh); }
   var d=grainImg.data;
   var a=Math.round(52*(1-s));
   for(var i=0;i<d.length;i+=4){
     var v=Math.random()*255;
     d[i]=v*0.95; d[i+1]=v*0.70; d[i+2]=v*0.36; d[i+3]=a*(Math.random()<0.55?1:0.35);
   }
-  grainCtx.putImageData(grainImg,0,0);
-  hctx.clearRect(0,0,W,H);
-  hctx.imageSmoothingEnabled=true;
-  hctx.drawImage(grainBuf,0,0,W,H);
+  hctx.putImageData(grainImg,0,0);
   /* a rolling bar, the way an unlocked signal crawls up the screen */
   var y=((T*0.13)%1.6-0.3)*H;
-  var gr=hctx.createLinearGradient(0,y,0,y+H*0.22);
+  var gr=hctx.createLinearGradient(0,y,0,y+H*0.22);   /* cheap at this size */
   gr.addColorStop(0,"rgba(232,163,60,0)");
   gr.addColorStop(0.5,"rgba(232,163,60,"+(0.05*(1-s))+")");
   gr.addColorStop(1,"rgba(232,163,60,0)");
@@ -729,7 +733,10 @@ function nudge(dt){
 }
 
 function readouts(){
-  khzEl.innerHTML = (power? String(Math.round(freq)) : "&middot;&middot;&middot;&middot;") + '<small>kHz</small>';
+  var want = power ? String(Math.round(freq)) : "\u00b7\u00b7\u00b7\u00b7";
+  if(readouts.khz!==want){ readouts.khz=want;
+    if(!khzEl.firstChild || khzEl.childNodes.length<2){ khzEl.textContent=want; khzEl.insertAdjacentHTML("beforeend","<small>kHz</small>"); }
+    else khzEl.firstChild.nodeValue=want; }
   var s=strength(), n=nearest();
   var lit=Math.round(s*7);
   var kids=barsEl.children;
@@ -758,7 +765,12 @@ function audioFollow(){
 
 /* ── loop ───────────────────────────────────────────────────── */
 var last=null;
+var HIDDEN=false;
+document.addEventListener("visibilitychange",function(){ HIDDEN=document.hidden;
+  if(!HIDDEN){ last=null; requestAnimationFrame(frame); }
+  if(AC){ HIDDEN ? AC.suspend&&AC.suspend() : AC.resume&&AC.resume(); } });
 function frame(ts){
+  if(HIDDEN) return;                    /* a backgrounded tab stops painting entirely */
   var dt=(last===null)?0:Math.min(0.05,(ts-last)/1000); last=ts; T+=dt;
   if(scanning && power){
     freq += dt*26;
@@ -769,7 +781,9 @@ function frame(ts){
     /* every set drifts. two slow sines, never in phase. */
     freq += (Math.sin(T*0.083)*0.0022 + Math.sin(T*0.031+1.7)*0.0014); }
   paintTune();
-  drawDial(); drawHiss(); bleed(); paint(); readouts(); nudge(dt); audioFollow();
+  drawDial();
+  frame.h=(frame.h||0)+dt; if(frame.h>0.05){ frame.h=0; drawHiss(); }   /* noise at ~20fps */
+  bleed(); paint(); readouts(); nudge(dt); audioFollow();
   requestAnimationFrame(frame);
 }
 
